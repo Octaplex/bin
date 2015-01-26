@@ -1,0 +1,16 @@
+#!/bin/bash
+# pkp <id>
+if [ ! $1 ]; then
+    echo "usage: pkp <id>"
+    exit 1
+fi
+
+KEYS_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/keys"
+PROFILE="$KEYS_ROOT/extra/$1"
+
+if [ -L "$PROFILE" ]; then
+    readlink "$PROFILE" | xargs basename | sed 's/^.*\.//'
+else
+    echo -e "\e[1;31merror:\e[0m no such id: $1"
+    exit 1
+fi

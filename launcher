@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+source ~/.config/panel/panel.cfg
+j4-dmenu-desktop --term=urxvt --dmenu="dmenu -i -h $height -dim 0.5 -dc '$back_color' -fn '$font' -nb '$back_color' -nf '$fore_color' -sb '$black' -sf '$bwhite'"

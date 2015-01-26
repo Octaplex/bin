@@ -1,0 +1,103 @@
+#!/bin/sh
+# cat(egor)ize a file into multiple category subdirectories
+set -ue
+
+srcdir=$PWD/.uncat        # the directory in which uncategorized files are stored
+destdir=$PWD              # the directory in which categories are stored
+dest=                     # (with -t) the name of the link to be created in $destdir/...
+mode=link                 # one of link, gen, list, diff, or bulk
+assoc=$srcdir/cats.assoc  # a file for bulk mode, containing lines of the format <src>:[<dest>][<cat>:...]
+go=true                   # if false, do a dry-run
+verbose=false             # if true, link will say what it's doing
+bulkfix=false             # if true, diff will append to $assoc
+
+while getopts :s:c:t:dvgblDa:f opt; do
+    case $opt in
+        s)
+            srcdir=$OPTARG
+            ;;
+        c)
+            destdir=$OPTARG
+            ;;
+        t)
+            dest=$OPTARG
+            ;;
+        d)
+            go=false
+            ;;
+        v)
+            verbose=true
+            ;;
+        b)
+            mode=bulk
+            ;;
+        g)
+            mode=gen
+            ;;
+        l)
+            mode=list
+            ;;
+        D)
+            mode=diff
+            ;;
+        a)
+            assoc=$OPTARG
+            ;;
+        f)
+            bulkfix=true
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+# usage: link <src> [<dest>] <category>
+link() {
+    if [ -e "$srcdir/$1" ]; then
+        [ "$2" ] && dest="$2" || dest="$1"
+        $go && ln -sf "$srcdir/$1" "$destdir/$3/$dest" || :
+    else
+        echo -e "\e[1;31merror:\e[0m no such file: $srcdir/$1"
+    fi
+}
+
+gen() { find $srcdir -type f ! -name *.assoc | sed "s:$srcdir/::" ; }
+list() {
+    find $destdir -mindepth 1 -maxdepth 1 -type d ! -path '*.uncat*' | sed "s:$destdir/::"
+}
+
+case $mode in
+    link)
+        src=$1
+        shift
+        $verbose && echo "$src → $*"
+        for cat in "$@"; do
+            link "$src" "$dest" "$cat"
+        done
+        ;;
+    bulk)
+        while IFS=':' read -a args ; do
+            $verbose && echo "${args[0]} → ${args[@]:2}"
+            [ "${args[1]}" = 'NOOP' ] && continue
+            for ((i=2; i<${#args[@]:1}; i++)); do
+                link "${args[0]}" "${args[1]}" "${args[$i]}"
+            done
+        done < "$assoc"
+        ;;
+
+    gen)
+        gen
+        ;;
+    list)
+        list
+        ;;
+    diff)
+        if $bulkfix ; then
+            write() { echo "$1" >>"$assoc" ; }
+        else
+            write() { echo "$1" ; }
+        fi
+        gen | while read src ; do
+            grep -q "$src" "$assoc" || write "$src"
+        done
+        ;;
+esac

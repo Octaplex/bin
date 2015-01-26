@@ -1,0 +1,116 @@
+#!/bin/bash
+DESKTOP=$HOME/img/desktop
+WALLS=$HOME/img/walls
+CMD='hsetroot %s "%s" "$@"'
+
+usage() {
+    cat <<EOF
+Usage: chbg [-ctfs] <image> [manipulations...]
+       chbg <color>[:<color>...[@<angle>]] [manipulations...]
+       chbg -r
+       chbg -h
+
+Options:
+    -h  Print this help message and exit.
+    -r  Restore the previous image
+
+Image Options:
+    -c  Center the image on the screen
+    -t  Tile the image on the screen
+    -F  Fit the image to the screen with its maximum aspect
+    -f  Stretch the image to fit the screen
+
+Manipulations:
+    -alpha <amount>
+    -tint <color>
+    -blur <radius>
+    -sharpen <radius>
+    -contrast <amount>
+    -brightness <amount>
+    -gamma <amount>
+    -flipv
+    -fliph
+    -flipd
+
+All options available to 'hsetroot' may be passed after the image name (or
+color name, but this is less useful).
+EOF
+}
+
+die() { echo -e "\e[1;31merror:\e[0m $1" ; exit ${2:-1} ; }
+write() { echo "$1" | sed 's/#/\\#/g' >> "$DESKTOP" ; }
+
+processImage() {
+    if [ -f $1 ]; then
+        pic=$1
+    elif [ -f "$WALLS/$1" ]; then
+        pic="$WALLS/$1"
+    else
+        die "no such image: $1"
+    fi
+    shift
+    write "hsetroot -${mode:-fill} $pic $*"
+}
+
+processColor() {
+    if grep -Eq ':|@' <<< "$1" ; then
+        IFS='@' read -a parts <<< "$1"
+        IFS=: read -a colors <<< "${parts[0]}"
+
+        buf="hsetroot"
+        for color in "${colors[@]}"; do
+            buf="$buf -add $color"
+        done
+        write "$buf -gradient ${parts[1]:-0} ${*:2}"
+    else
+        write "hsetroot -solid $1 ${*:2}"
+    fi
+
+}
+
+[ -e "$DESKTOP" ] && rm "$DESKTOP"
+echo "#!/bin/bash" > "$DESKTOP"
+chmod +x "$DESKTOP"
+
+case "$1" in
+    -c)
+        mode='center'
+        shift
+        ;;
+    -t)
+        mode='tile'
+        shift
+        ;;
+    -f)
+        mode='full'
+        shift
+        ;;
+    -s)
+        mode='fill'
+        shift
+        ;;
+    -h)
+        usage
+        exit
+        ;;
+    -r)
+        "$DESKTOP"
+        exit
+        ;;
+    --)
+        shift
+        ;;
+esac
+
+[ $1 ] || die "expected color or name of image" 2
+
+if [ $mode ]; then
+    processImage "$@"
+else
+    if [ ${1:0:1} = '#' ]; then
+        processColor "$@"
+    else
+        processImage "$@"
+    fi
+fi
+"$DESKTOP"

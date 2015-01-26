@@ -1,0 +1,64 @@
+#!/usr/bin/bash
+set -ue
+
+go=true
+verbose=false
+
+srcdir=$HOME/dotfiles
+targetdir=$HOME
+
+usage() {
+    cat <<EOF
+usage: lnd [-dvT] [-s <dotfiles>] [-t <home>]
+       lnd -h
+
+Options:
+    -d        Do a dry run (implies -v)
+    -v        Print information about which files are being linked
+    -T        Replace \`\$HOME\` with a tilde (~) in verbose output
+    -s <dir>  Look for link files in <dir>
+    -t <dir>  Set the target of link files relative to <dir>
+    -h        Print this message and exit
+EOF
+}
+
+infos() { echo "$1"; }
+
+while getopts :dvs:t:Th arg ; do
+    case $arg in
+        d)
+            go=false
+            verbose=true
+            ;;
+        v)
+            verbose=true
+            ;;
+        s)
+            srcdir=$OPTARG
+            ;;
+        t)
+            targetdir=$OPTARG
+            ;;
+        T)
+            infos() { sed "s:$HOME:~:g" <<< "$1"; }
+            ;;
+        h)
+            usage
+            exit
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+diaspora="$srcdir/.diaspora"
+[ -e "$diaspora" ] && rm "$diaspora"
+touch "$diaspora"
+
+for link in $(find $srcdir -path '*.ln'); do
+    base=${link%%.ln}
+    target=$targetdir/${base#$srcdir/}
+
+    echo "$link→$target" >> "$diaspora"
+    $verbose && infos "$link → $target"
+    $go && ln -fs $link $target || :
+done
