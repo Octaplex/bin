@@ -1,0 +1,26 @@
+#!/bin/bash
+# list available key profiles
+
+KEYS_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}/keys"
+
+get_avail() {
+    current=`readlink $KEYS_ROOT/extra/$1`
+    echo "$1:"
+    for profile in $KEYS_ROOT/profiles/$1.*; do
+        basename=`basename $profile`
+        if [ $profile = $current ]; then
+            buf='  + '
+        else
+            buf='  - '
+        fi
+        echo "$buf${basename##$1.}"
+    done
+}
+
+if [ $1 ]; then
+    get_avail $1
+else
+    for extra in $KEYS_ROOT/extra/*; do
+        get_avail "$(basename $extra)"
+    done
+fi

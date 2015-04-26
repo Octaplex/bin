@@ -1,8 +1,9 @@
 #!/bin/bash
-raw='/tmp/raw-lock-scrot.png'
-blr='/tmp/tint-lock-scrot.png'
+IMG=/tmp/screen.png
+ICO=$HOME/img/lock_over.png
 
-scrot -d0 "$raw"
-convert "$raw" -modulate 100,75 -blur 0x4 "$blr"
+scrot -d0 $IMG
+convert $IMG -scale 10% -scale 1000% -fill black -colorize 25% $IMG
+[[ -f $ICO ]] && convert $IMG $ICO -gravity center -composite -matte $IMG
 
-/usr/bin/i3lock -i "$blr"
+i3lock -u -i $IMG

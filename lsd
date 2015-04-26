@@ -1,2 +1,52 @@
 #!/bin/bash
 # lsd: list dotfiles
+set -ue
+
+mode=current
+srcdir=$HOME/dotfiles
+targetdir=$HOME
+
+while getopts :caos:t: arg ; do
+    case $arg in
+        c)
+            mode=current
+            ;;
+        a)
+            mode=all
+            ;;
+        o)
+            mode=orphans
+            ;;
+        s)
+            srcdir=$OPTARG
+            ;;
+        t)
+            targetdir=$OPTARG
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+diaspora="$srcdir/.diaspora"
+findlinks() { find "$targetdir" -type l ! -path '*.xxx*' 2>/dev/null; }
+
+if [ -e "$diaspora" ]; then
+    case $mode in
+        current)
+            awk -F→ '{ print $2 }' "$diaspora"
+            ;;
+        all)
+            findlinks | while read link ; do
+                grep -q "$srcdir" <(readlink "$link") && echo "$link" || :
+            done
+            ;;
+        orphans)
+            findlinks | while read link ; do
+                target="$(readlink "$link")"
+                if grep -q "$srcdir" <<< "$target" ; then
+                    [ ! -e "$target" ] && echo "$link" || :
+                fi
+            done
+            ;;
+    esac
+fi

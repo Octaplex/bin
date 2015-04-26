@@ -1,103 +1,297 @@
-#!/bin/sh
-# cat(egor)ize a file into multiple category subdirectories
-set -ue
+#!/usr/bin/env ruby
+require 'docopt'
+require 'fileutils'
 
-srcdir=$PWD/.uncat        # the directory in which uncategorized files are stored
-destdir=$PWD              # the directory in which categories are stored
-dest=                     # (with -t) the name of the link to be created in $destdir/...
-mode=link                 # one of link, gen, list, diff, or bulk
-assoc=$srcdir/cats.assoc  # a file for bulk mode, containing lines of the format <src>:[<dest>][<cat>:...]
-go=true                   # if false, do a dry-run
-verbose=false             # if true, link will say what it's doing
-bulkfix=false             # if true, diff will append to $assoc
+include FileUtils
 
-while getopts :s:c:t:dvgblDa:f opt; do
-    case $opt in
-        s)
-            srcdir=$OPTARG
-            ;;
-        c)
-            destdir=$OPTARG
-            ;;
-        t)
-            dest=$OPTARG
-            ;;
-        d)
-            go=false
-            ;;
-        v)
-            verbose=true
-            ;;
-        b)
-            mode=bulk
-            ;;
-        g)
-            mode=gen
-            ;;
-        l)
-            mode=list
-            ;;
-        D)
-            mode=diff
-            ;;
-        a)
-            assoc=$OPTARG
-            ;;
-        f)
-            bulkfix=true
-            ;;
-    esac
-done
-shift $((OPTIND-1))
+def die(why = 'something fishy happened')
+  puts "\e[1;31merror:\e[0m #{why}"
+  exit
+end
 
-# usage: link <src> [<dest>] <category>
-link() {
-    if [ -e "$srcdir/$1" ]; then
-        [ "$2" ] && dest="$2" || dest="$1"
-        $go && ln -sf "$srcdir/$1" "$destdir/$3/$dest" || :
-    else
-        echo -e "\e[1;31merror:\e[0m no such file: $srcdir/$1"
-    fi
-}
+def warn(what)
+  puts "\e[1;33mwarning:\e[0m #{what}"
+end
 
-gen() { find $srcdir -type f ! -name *.assoc | sed "s:$srcdir/::" ; }
-list() {
-    find $destdir -mindepth 1 -maxdepth 1 -type d ! -path '*.uncat*' | sed "s:$destdir/::"
-}
+class Repo
 
-case $mode in
-    link)
-        src=$1
-        shift
-        $verbose && echo "$src → $*"
-        for cat in "$@"; do
-            link "$src" "$dest" "$cat"
-        done
-        ;;
-    bulk)
-        while IFS=':' read -a args ; do
-            $verbose && echo "${args[0]} → ${args[@]:2}"
-            [ "${args[1]}" = 'NOOP' ] && continue
-            for ((i=2; i<${#args[@]:1}; i++)); do
-                link "${args[0]}" "${args[1]}" "${args[$i]}"
-            done
-        done < "$assoc"
-        ;;
+  META_DIR = ".yarn"
+  SRC_DIR = File.join(META_DIR, "sources")
+  DUMP_FILE = File.join(META_DIR, "dump")
+  TMP_FILE = "#{DUMP_FILE}.tmp"
 
-    gen)
-        gen
-        ;;
-    list)
-        list
-        ;;
-    diff)
-        if $bulkfix ; then
-            write() { echo "$1" >>"$assoc" ; }
+  attr_reader :root
+  attr_reader :meta_dir
+  attr_reader :src_dir
+  attr_reader :dump_file
+
+  attr_reader :sources
+  attr_reader :assocs
+
+  def initialize(dir)
+    @root = dir
+    @meta_dir = File.join(@root, META_DIR)
+    @src_dir = File.join(@root, SRC_DIR)
+    @dump_file = File.join(@root, DUMP_FILE)
+    @tmp_file = File.join(@root, TMP_FILE)
+
+    @sources = scan
+    @assocs = assoc
+  end
+
+  def self.discover(dir = Dir.pwd)
+    until valid_root?(dir)
+      dir = File.expand_path(File.join(dir, ".."))
+      die "not a cat repo" unless File.writable?(dir)
+    end
+    new(dir)
+  end
+
+  def self.valid_root?(dir)
+    meta = File.join(dir, META_DIR)
+    File.directory?(meta) && File.writable?(meta)
+  end
+
+  def sync
+    File.open @tmp_file, "w" do |file|
+      @assocs.each do |assoc|
+        file.puts(assoc.dump)
+
+        next if assoc.noop?
+        next if $smart && assoc.cats.all? { |cat| File.symlink?(File.join(@root, cat, assoc.target)) }
+
+        if $go then
+          assoc.cats.each do |cat|
+            ln_sf File.join(@src_dir, assoc.source),
+                  File.join(@root, cat, assoc.target)
+          end
+        end
+        assoc.log if $verbose
+      end
+    end
+    mv @tmp_file, @dump_file if $go
+  end
+
+  def push(source, cats, target)
+    assoc = Assoc.new(source, cats, target)
+    @assocs.push assoc
+    assoc
+  end
+
+  def cats
+    Dir[File.join(@root, "*")].select { |fn| File.directory?(fn) }.map do |dir|
+      dir.sub("#@root/", '')
+    end
+  end
+
+  def find_src(src)
+    @assocs.find { |a| a.source == src }
+  end
+
+  def find_cat(cat)
+    @assocs.find_all { |a| a.cats.include?(cat) }
+  end
+
+  private def assoc
+    return [] unless File.exist?(@dump_file)
+    File.read(@dump_file).split("\n").map.with_index do |line, num|
+      a = Assoc.parse(line)
+      if @sources.include?(a.source)
+        a
+      else
+        warn "pathspec `#{a.source}` does not match any source (line #{num+1})"
+        nil
+      end
+    end.reject(&:nil?)
+  end
+
+  private def scan(dir = @src_dir)
+    Dir.entries(dir).reject { |d| d =~ /^\.+$/ }.reduce([]) do |ary, elem|
+      fn = File.join(dir, elem)
+      if File.file?(fn)
+        ary.push fn
+        ary
+      else
+        if File.exist?(File.join(fn, '.dirlock'))
+          ary.push fn
+          ary
+        elsif File.exist?(File.join(fn, '.pdirlock'))
+          ary.push fn
+          ary.push scan(fn)
+          ary
+        elsif !File.exist?(File.join(fn, '.ignore'))
+          ary.push scan(fn)
+          ary
         else
-            write() { echo "$1" ; }
-        fi
-        gen | while read src ; do
-            grep -q "$src" "$assoc" || write "$src"
-        done
-        ;;
-esac
+          ary
+        end
+      end
+    end.flatten.map { |src| src.sub("#@src_dir/", '') }
+  end
+
+end
+
+class Assoc
+
+  attr_reader :source
+  attr_reader :target
+  attr_accessor :cats
+
+  def initialize(source, cats, target)
+    @source = source
+    @target = target.nil? ? source : target
+    @cats = cats
+  end
+
+  def self.parse(str)
+    if /^(?<src>[^:@]+)(:(?<target>[^:@]+))?(@(?<cats>.*))?$/ =~ str
+      cats = '' if cats.nil?
+      new(src, cats.split(','), target)
+    else
+      nil
+    end
+  end
+
+  def dump
+    if noop?
+      @source
+    elsif @source == @target
+      "#@source@#{@cats.join(',')}"
+    else
+      "#@source:#@target@#{@cats.join(',')}"
+    end
+  end
+
+  def noop?
+    cats.empty?
+  end
+
+  def log
+    if @source == @target
+      puts "#@source → #{@cats.join(', ')}"
+    else
+      puts "#@source (#@target) → #{@cats.join(', ')}"
+    end
+  end
+
+end
+
+begin
+  $args = Docopt::docopt <<DOCOPT
+catize - categorize your files with <3
+
+Usage:
+  catize link [<file> [-a|-D|-O] (<cats>|--noop) [-t <name>]] [-dvf]
+  catize list [-q <file> | -Q <cat> | -r | -c | -o]
+  catize diff
+  catize info [-CgnR]
+  catize -h
+
+Options:
+  -a         Append the categories to an existing file.
+  -D         Remove the categories from an existing file.
+  -O         Overwrite the categories of an existing file.
+  -t <name>  The name of the link(s) to create.
+  -d         Do a dry run (implies -v).
+  -v         Say what's happening.
+  -f         Force re-linking (even if the link already exists).
+  -q <file>  List the categories of <file>, if it exists.
+  -Q <cat>   List the files associated with <cat>, if it exists.
+  -r         List raw sources.
+  -c         List categorized sources.
+  -o         List NOOPs.
+  -C         Only output category information.
+  -g         Only output general statistics.
+  -n         Sort numerically by number of sources.
+  -R         Sort in reverse.
+  -h         Output this help message and exit.
+
+DOCOPT
+rescue Docopt::Exit => e
+  puts e.message
+  exit
+end
+
+%w(link list diff info).each { |pm| $mode = pm.intern if $args[pm] }
+$repo = Repo.discover
+
+$go = true
+$verbose = false
+$smart = true
+
+case $mode
+when :link
+  if $args['-d']
+    $go = false
+    $verbose = true
+  elsif $args['-v']
+    $verbose = true
+  end
+  $smart = false if $args['-f']
+
+  if $args['<file>']
+    cats = $args['<cats>'] ? $args['<cats>'].split(',') : []
+    if $args['-a'] || $args['-D'] || $args['-O']
+      assoc = $repo.find_src($args['<file>'])
+      die "pathspec `#{$args['<file>']}` does not match any source" unless assoc
+
+      if $args['-a']
+        assoc.cats += cats
+      elsif $args['-D']
+        assoc.cats -= cats
+      elsif $args['-O']
+        assoc.cats = cats
+      end
+    else
+      $repo.push($args['<file>'], cats, $args['-t'])
+    end
+  end
+  $repo.sync
+
+when :list
+  if $args['-q']
+    puts $repo.find_src($args['-q']).cats.join("\n")
+  elsif $args['-Q']
+    require 'pp'
+    puts($args['-Q'].split(',').map do |cat|
+      $repo.find_cat(cat).map { |a| a.source }
+    end.reduce(&:&).join("\n"))
+  elsif $args['-r']
+    puts $repo.sources.join("\n")
+  elsif $args['-c']
+    puts $repo.assocs.map { |a| a.source }.join("\n")
+  elsif $args['-o']
+    puts $repo.assocs.select(&:noop?).map { |a| a.source }.join("\n")
+  else
+    puts $repo.cats.sort.join("\n")
+  end
+
+when :diff
+  ($repo.sources - $repo.assocs.map { |a| a.source }).each { |d| puts d }
+
+when :info
+  numsrc = $repo.sources.length
+  numnoop = $repo.assocs.select(&:noop?).length
+  numrsrc = numsrc - numnoop
+
+  unless $args['-C']
+    numcsrc = $repo.assocs.length
+
+    puts "Repository: #{$repo.root}"
+    puts "Raw Sources: #{numsrc}"
+    puts "Categorized Sources: #{numcsrc} (#{(numcsrc.to_f/numsrc*100).round}%)"
+    puts "NOOPs: #{numnoop} (#{(numnoop.to_f/numsrc*100).round}%)"
+    puts unless $args['-g']
+  end
+  unless $args['-g']
+    sort = $args['-n'] ? proc { |ary| ary[1] } : proc { |ary| ary[0] }
+    rev = $args['-R'] ? proc { |x| x.reverse } : proc { |x| x }
+    fmt = "%-15s %-4s %-8s\n"
+
+    printf fmt, "Category", "Num", "Percent"
+    rev.call($repo.cats.map do |cat|
+      numcat = $repo.find_cat(cat).length
+      [cat, numcat, "#{(numcat.to_f/numrsrc*100).round}%"]
+    end.sort_by(&sort)).each { |ary| printf(fmt, *ary) }
+  end
+end

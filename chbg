@@ -68,10 +68,6 @@ processColor() {
 
 }
 
-[ -e "$DESKTOP" ] && rm "$DESKTOP"
-echo "#!/bin/bash" > "$DESKTOP"
-chmod +x "$DESKTOP"
-
 case "$1" in
     -c)
         mode='center'
@@ -101,6 +97,10 @@ case "$1" in
         shift
         ;;
 esac
+
+[ -e "$DESKTOP" ] && rm "$DESKTOP"
+echo "#!/bin/bash" > "$DESKTOP"
+chmod +x "$DESKTOP"
 
 [ $1 ] || die "expected color or name of image" 2
 
