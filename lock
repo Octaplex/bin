@@ -1,9 +1,7 @@
 #!/bin/bash
 IMG=/tmp/screen.png
-ICO=$HOME/img/lock_over.png
 
 scrot -d0 $IMG
-convert $IMG -scale 10% -scale 1000% -fill black -colorize 25% $IMG
-[[ -f $ICO ]] && convert $IMG $ICO -gravity center -composite -matte $IMG
+convert $IMG -scale 10% -scale 1000%  $IMG
 
-i3lock -u -i $IMG
+i3lock -i $IMG
