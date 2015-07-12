@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 for fn in "$@" ; do
     if [ -d $fn ]; then
-        rm -r $fn
+        rm -rf $fn
         mkdir $fn
     elif [ -f $fn ]; then
         rm $fn
