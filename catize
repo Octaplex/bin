@@ -88,6 +88,10 @@ class Repo
     @assocs.find { |a| a.source == src }
   end
 
+  def find_target(target)
+    @assocs.find { |a| a.target == target }
+  end
+
   def find_cat(cat)
     @assocs.find_all { |a| a.cats.include?(cat) }
   end
@@ -182,7 +186,7 @@ catize - categorize your files with <3
 
 Usage:
   catize link [<file> [-a|-D|-O] (<cats>|--noop) [-t <name>]] [-dvf]
-  catize list [-q <file> | -Q <cat> | -r | -c | -o]
+  catize list [-r|-c|-o] [-q <file> | -Q <cat>]
   catize diff
   catize info [-CgnR]
   catize -h
@@ -195,11 +199,11 @@ Options:
   -d         Do a dry run (implies -v).
   -v         Say what's happening.
   -f         Force re-linking (even if the link already exists).
+  -r         List raw sources.
+  -c         List targets.
+  -o         List NOOPs.
   -q <file>  List the categories of <file>, if it exists.
   -Q <cat>   List the files associated with <cat>, if it exists.
-  -r         List raw sources.
-  -c         List categorized sources.
-  -o         List NOOPs.
   -C         Only output category information.
   -g         Only output general statistics.
   -n         Sort numerically by number of sources.
@@ -250,20 +254,27 @@ when :link
 
 when :list
   if $args['-q']
-    puts $repo.find_src($args['-q']).cats.join("\n")
+    if $args['-c']
+      assoc = $repo.find_target($args['-q'])
+    else
+      assoc = $repo.find_src($args['-q'])
+    end
+    puts assoc.cats.join("\n")
   elsif $args['-Q']
-    require 'pp'
+    mapf = $args['-c'] ? proc { |a| a.target } : proc { |a| a.source }
     puts($args['-Q'].split(',').map do |cat|
-      $repo.find_cat(cat).map { |a| a.source }
+      $repo.find_cat(cat).map(&mapf)
     end.reduce(&:&).join("\n"))
-  elsif $args['-r']
-    puts $repo.sources.join("\n")
-  elsif $args['-c']
-    puts $repo.assocs.map { |a| a.source }.join("\n")
-  elsif $args['-o']
-    puts $repo.assocs.select(&:noop?).map { |a| a.source }.join("\n")
   else
-    puts $repo.cats.sort.join("\n")
+    if $args['-r']
+      puts $repo.sources.join("\n")
+    elsif $args['-c']
+      puts $repo.assocs.map { |a| a.source }.join("\n")
+    elsif $args['-o']
+      puts $repo.assocs.select(&:noop?).map { |a| a.source }.join("\n")
+    else
+      puts $repo.cats.sort.join("\n")
+    end
   end
 
 when :diff
