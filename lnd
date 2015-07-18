@@ -60,5 +60,8 @@ for link in $(find $srcdir -path '*.ln'); do
 
     echo "$link→$target" >> "$diaspora"
     $verbose && infos "$link → $target"
-    $go && ln -fs $link $target || :
+    if $go; then
+        mkdir -p "$(dirname $target)"
+        ln -fs $link $target || :
+    fi
 done
