@@ -1,3 +1,4 @@
 #!/bin/bash
-sxhkd -c ~/.config/keys/keys ~/.config/keys/extra/* >/dev/null 2>/dev/null &
+KEYDIR=$HOME/.config/keys
+sxhkd -c $KEYDIR/keys $KEYDIR/extra/* >/dev/null 2>/dev/null &
 echo $! > ~/.config/keys/pid
