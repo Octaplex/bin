@@ -6,7 +6,25 @@ mode=current
 srcdir=$HOME/dotfiles
 targetdir=$HOME
 
-while getopts :caos:t: arg ; do
+usage() {
+    cat <<EOF
+usage: lsd [-c|-a|-o] [-T] [-s <dotfiles] [-t <home>]
+       lsd -h
+
+Options:
+    -c        Print good links
+    -a        Print all links
+    -o        Print broken links
+    -T        Replace \`\$HOME\` with a tilde (~) in output
+    -s <dir>  Look for link files in <dir>
+    -t <dir>  Look for link results relative to <dir>
+    -h        Print this message and exit
+EOF
+}
+
+infos() { echo "$1"; }
+
+while getopts :caos:t:Th arg ; do
     case $arg in
         c)
             mode=current
@@ -23,6 +41,13 @@ while getopts :caos:t: arg ; do
         t)
             targetdir=$OPTARG
             ;;
+        T)
+            infos() { sed "s:$HOME:~:g" <<< "$1"; }
+            ;;
+        h)
+            usage
+            exit
+            ;;
     esac
 done
 shift $((OPTIND-1))
@@ -33,20 +58,22 @@ findlinks() { find "$targetdir" -type l ! -path '*.xxx*' 2>/dev/null; }
 if [ -e "$diaspora" ]; then
     case $mode in
         current)
-            awk -F→ '{ print $2 }' "$diaspora"
+            infos "$(awk -F→ '{ print $2 }' "$diaspora")"
             ;;
         all)
             findlinks | while read link ; do
-                grep -q "$srcdir" <(readlink "$link") && echo "$link" || :
+                grep -q "$srcdir" <(readlink "$link") && infos "$link" || :
             done
             ;;
         orphans)
             findlinks | while read link ; do
                 target="$(readlink "$link")"
                 if grep -q "$srcdir" <<< "$target" ; then
-                    [ ! -e "$target" ] && echo "$link" || :
+                    [ ! -e "$target" ] && infos "$link" || :
                 fi
             done
             ;;
     esac
+else
+    echo -e "\e[1;31merror:\e[0m no diaspora file in $srcdir"
 fi
