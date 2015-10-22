@@ -1,0 +1,18 @@
+#!/bin/bash
+if [[ -z "$1" || "$1" == "-" ]]; then
+    read str
+elif [[ "$1" == "-h" ]]; then
+    cat <<EOF
+usage: xcopy [-h] [TEXT]
+
+Copy arbitrary text to the X primary selection and the X clipboard. If no TEXT
+provided, or if TEXT IS '-', then stdin will be copied.
+
+EOF
+    exit
+else
+    str="$1"
+fi
+
+echo "$str" | xsel -p
+echo "$str" | xsel -b

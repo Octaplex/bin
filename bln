@@ -1,0 +1,88 @@
+#!/bin/bash
+# bln : symlink one target with multiple names
+#
+# we emulate ln(1) as much as possible, but no support is attempted for
+# hardlinks or backups
+
+LINK="ln -s"
+SUMMARY="usage: bln [options] TARGET NAME..."
+DRY=false
+
+usage() {
+    cat <<EOF
+$SUMMARY
+
+Options:
+    -D, --dry-run              don't actually do anything, just print commands
+    -f, --force                remove existing destination files
+    -i, --interactive          prompt whether to remove destinations
+    -L, --logical              dereference TARGETs that are symbolic links
+    -n, --no-dereference       treat NAMEs as normal files if they are
+                               symbolic links to a directory
+    -r, --relative             create symbolic links relative to link location
+    -t, --target-directory     specify the directory in which to create
+                               the links
+    -T, --no-target-directory  treat NAMEs as normal files always
+    -h, --help                 display this help and exit
+    --version                  output version information and exit
+
+EOF
+exit
+}
+
+while getopts ":fiLnrtTVhD-:" opt; do
+    case $opt in
+        f|i|L|n|r|t|T|V)
+            LINK="$LINK -$opt"
+            ;;
+        D)
+            DRY=true
+            ;;
+        -)
+            case "${OPTARG}" in
+                force|interactive|logical|no-dereference|relative|target-directory|no-target-directory)
+                    LINK="$LINK --${OPTARG}"
+                    ;;
+                dry-run)
+                    DRY=true
+                    ;;
+                version)
+                    ln --version
+                    ;;
+                help)
+                    usage
+                    ;;
+                *)
+                    echo "unknown argument: --${OPTARG}"
+                    echo $SUMMARY
+                    exit
+                    ;;
+            esac
+            ;;
+        h)
+            usage
+            ;;
+        ?)
+            echo "unknown argument: -$OPTARG"
+            echo $SUMMARY
+            exit
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [[ "${#@}" -lt 2 ]]; then
+    echo "nothing to do!"
+    usage
+fi
+
+TARGET="$1"
+shift
+
+for NAME in "$@"; do
+    if $DRY; then
+        echo "$LINK '$TARGET' '$NAME'"
+    else
+        $LINK "$TARGET" "$NAME"
+    fi
+done

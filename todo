@@ -1,0 +1,11 @@
+#!/bin/bash
+list="$HOME/doc/todo"
+
+if [ "$1" = "-p" ]; then
+    sed '/^+/d' <"$list"
+elif [ "$1" ]; then
+    echo "- $1" >>"$list"
+else
+    sed -e 's/^- /\x1b[0m/g' -e 's/^+ /\x1b[32m/g' -e 's/^! /\x1b[1;31m/g' <"$list"
+    echo -ne "\e[0m"
+fi

@@ -1,0 +1,8 @@
+#!/bin/bash
+# simple script to get/set the current terminal title
+
+if [ "$1" ]; then
+    echo -ne "\e]2;$1\a"
+else
+    xprop -id $WINDOWID | perl -nle 'print $1 if /^WM_NAME.+= "(.*)"$/'
+fi

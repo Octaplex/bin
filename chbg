@@ -1,5 +1,5 @@
 #!/bin/bash
-SRCDIR=$HOME/img/walls
+SRCDIR="$HOME/img/walls"
 
 setbg() {
     if [[ -e "$1" ]]; then
@@ -14,10 +14,7 @@ setbg() {
     fi
 }
 
-if [[ "$1" = "-" ]]; then
-    read input
-    quiet=true setbg "$input"
-elif [[ -z "$1" || "$1" = "-h" ]]; then
+if [[ -z "$1" || "$1" = "-h" ]]; then
     echo "usage: chbg <img>"
     exit
 else
