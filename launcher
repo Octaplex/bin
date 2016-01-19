@@ -1,3 +1,3 @@
 #!/usr/bin/bash
-source $PANEL_CONFIG
-j4-dmenu-desktop --term=urxvt --dmenu="dmenu -i -h $height -dc '$back_color' -fn 'Inconsolata-g:size=9' -nb '$dnsel_back' -nf '$dnsel_fore' -sb '$dsel_back' -sf '$dsel_fore'"
+source $HOME/.config/panel/config
+j4-dmenu-desktop --term=urxvt --dmenu="dmenu -i -h $height -w $(($width-10)) -x $(($x+5)) -y $y -dc '$back_color' -fn '$font_1' -nb '$dnsel_back' -nf '$dnsel_fore' -sb '$dsel_back' -sf '$dsel_fore'"
