@@ -3,8 +3,8 @@ source ~/.config/colors/colors.sh
 
 ln -sf "$1" "$HOME/img/desktop"
 hsetroot -fill "$HOME/img/desktop"
-convert "$HOME/img/desktop" -blur 0x10 \
+convert "$HOME/img/desktop" -blur 0x14 \
     -resize $(xdpyinfo | grep 'dimensions:' | cut -d' ' -f7) \
-    -fill '#00000000' -fill "#${white}aa" -font Righteous -pointsize 60 \
-    -gravity Center -annotate +0-288 'ENTER PASSWORD TO UNLOCK' \
+    -fill '#00000000' -fill "#${white}99" -font Merkur \
+    -pointsize 80 -gravity Center -annotate +0-288 'ENTER PASSWORD TO UNLOCK' \
     "$HOME/img/lock.png"
