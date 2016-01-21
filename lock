@@ -1,7 +1,7 @@
 #!/bin/bash
-IMG=/tmp/screen.png
-
-scrot -d0 $IMG
-convert $IMG -scale 10% -scale 1000%  $IMG
-
-i3lock -i $IMG
+source ~/.config/colors/colors.sh
+i3lock -i ~/img/lock.png --ringcolor="${white}33" --insidecolor="00000000" \
+    --linecolor=00000000 --keyhlcolor="${green}aa" --bshlcolor="${orange}ff" \
+    --ringwrongcolor="00000000" --insidewrongcolor="00000000" \
+    --ringvercolor="00000000" --insidevercolor="00000000" \
+    --textcolor="${white}ff"
