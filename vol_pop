@@ -1,25 +1,24 @@
 #!/usr/bin/bash
 source ~/.config/colors/colors.sh
 
-socket="/tmp/vol_pop-socket"
 pidfile="/tmp/vol_pop-pid"
-
-[ -e "$pidfile" ] && pkill -P $(cat "$pidfile")
-echo $$ >"$pidfile"
 
 vol=$(amixer get Master | tail -1 | cut -d ' ' -f 6 | tr -d '[%]')
 width=40
 
 hiw=$(($width*$vol/100))
-unw=$(($width*(100-$vol)/100))
+unw=$(($width-$hiw))
 
-hi="%{F$orange}$(yes '─' | head -n $hiw | tr -d '\n')"
-un="%{F$gray}$(yes '─' | head -n $unw | tr -d '\n')"
+hi="%{F#$orange}$(yes '─' | head -n $hiw | tr -d '\n')"
+un="%{F#$gray}$(yes '─' | head -n $unw | tr -d '\n')"
 
 go() {
     echo "    $hi$un"
     sleep 2
 }
 
+[ -e "$pidfile" ] && pkill -P $(cat "$pidfile")
+echo $$ >"$pidfile"
+
 go | lemonbar -f 'Iosevka:size=15:style=Regular' \
-    -f 'Material\-Design\-Iconic\-Font:size=17' -B "$black" -bg 480x48+40+40
+    -f 'Material\-Design\-Iconic\-Font:size=17' -B "#$black" -bg 480x48+40+40
