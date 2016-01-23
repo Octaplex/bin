@@ -13,7 +13,7 @@ hi="%{F#$orange}$(yes '─' | head -n $hiw | tr -d '\n')"
 un="%{F#$gray}$(yes '─' | head -n $unw | tr -d '\n')"
 
 go() {
-    echo "    $hi$un"
+    echo "    $hi$un"
     sleep 2
 }
 
@@ -21,4 +21,4 @@ go() {
 echo $$ >"$pidfile"
 
 go | lemonbar -f 'Iosevka:size=15:style=Regular' \
-    -f 'Material\-Design\-Iconic\-Font:size=17' -B "#$black" -bg 480x48+40+40
+    -f 'Material Icons:size=17' -B "#$black" -bg 480x48+40+40
