@@ -21,4 +21,4 @@ go() {
 echo $$ >"$pidfile"
 
 go | lemonbar -f 'Iosevka:size=15:style=Regular' \
-    -f 'Material Icons:size=17' -B "#$black" -bg 480x48+40+40
+    -f 'Material Icons:size=17' -B "#$black" -bg 490x48+40+40
