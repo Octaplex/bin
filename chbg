@@ -1,6 +1,8 @@
 #!/bin/bash
 source ~/.config/colors/colors.sh
 
+# -resize $(xdpyinfo | grep 'dimensions:' | cut -d' ' -f7) \
+
 ln -sf "$1" "$HOME/img/desktop"
 hsetroot -fill "$HOME/img/desktop" -write "$HOME/img/lock.png"
 convert "$HOME/img/lock.png" -blur 0x14 \
