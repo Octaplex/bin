@@ -7,7 +7,7 @@ width=40
 hiw=$(($width*$vol/100))
 unw=$(($width-$hiw))
 
-hi="%{F#$yellow}$(yes '─' | head -n $hiw | tr -d '\n')"
-un="%{F#$orange}$(yes '─' | head -n $unw | tr -d '\n')"
+hi="%{F#$orange}$(yes '─' | head -n $hiw | tr -d '\n')"
+un="%{F#$gray}$(yes '─' | head -n $unw | tr -d '\n')"
 
-pop "%{B#$red}    $hi$un  "
+pop "%{B#$color19}    $hi$un  "
