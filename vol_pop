@@ -10,4 +10,4 @@ unw=$(($width-$hiw))
 hi="%{F#$orange}$(yes '─' | head -n $hiw | tr -d '\n')"
 un="%{F#$gray}$(yes '─' | head -n $unw | tr -d '\n')"
 
-pop "%{B#$color19}    $hi$un  "
+pop "   $hi$un  "
