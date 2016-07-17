@@ -1,4 +1,4 @@
 #!/usr/bin/bash
 source ~/.config/panel/config
 source ~/.config/colors/colors.sh
-j4-dmenu-desktop --term=urxvt --dmenu="dmenu -i -h $height -w $(($width-10)) -x $(($x+5)) -y $y -dc '$back_color' -fn '$font_1' -nb '$back_color' -nf '#$gray' -sb '#$orange' -sf '#ffffff'"
+j4-dmenu-desktop --term=urxvt --dmenu="dmenu -i -h $height -w $(($width-10)) -x $(($x+5)) -y $y -fn '$font_1' -nf '#$gray' -sb '#$orange' -sf '#ffffff' -o 0"
