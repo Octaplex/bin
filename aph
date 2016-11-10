@@ -1,0 +1,175 @@
+#!/usr/bin/python3
+import os, sys
+import json
+import argparse
+import itertools
+
+DB_FILE = '.assoc.json'
+
+def fail(why, prefix='\033[31merror:\033[0m ', code=1):
+    """
+    Print a failure message and exit.
+
+    :param why: the message
+    :param prefix: an optional custom prefix, by default "error: "
+    :param code: the error code to exit with, by default 1
+    """
+    print(prefix + why, file=sys.stderr)
+    exit(code)
+
+def ask(query, on_yes = None, on_no = None):
+    """
+    Ask the user a yes-no question.
+
+    :param query: the question to ask
+    :param on_yes: a function to execute if the user answers yes
+    :param on_no: a function to execute if the user answers no
+    :return the result of the appropriate function, or None
+    """
+    while True:
+        res = input(query).tolower()
+        if res == 'y':
+            if on_yes != None:
+                return on_yes()
+            else:
+                return None
+        elif res == 'n':
+            if on_no != None:
+                return on_no()
+            else:
+                return None
+
+
+def read_db(where):
+    """
+    Read from the database file of a particular root.
+
+    :param where: the porn root to read in
+    :return: the association dict from the JSON-encoded database
+    """
+    with open(os.path.join(where, DB_FILE)) as f:
+        return json.load(f)
+
+def write_db(where, what):
+    """
+    Write into the database file of a particular root.
+
+    :param where: the porn root to write in
+    :param what: the data to write
+    """
+    with open(os.path.join(where, DB_FILE), 'w') as f:
+        json.dump(what, f)
+
+def search(args):
+    goods = []
+    bads = []
+    for arg in args.terms:
+        if arg[0] == '-':
+            bads.append(arg[1:])
+        else:
+            goods.append(arg)
+
+    for fn, tags in read_db(args.root).items():
+        good = all(tag in tags for tag in goods)
+        bad = any(tag in tags for tag in bads)
+
+        if good and not bad: print(fn)
+
+def rename(args):
+    db = read_db(args.root)
+    if args.src in db:
+        if args.dest in db: ask('Overwrite ' + args.dest + '? ', on_yes=exit)
+        db[args.dest] = db.pop(args.src)
+        os.rename(os.path.join(args.root, args.src),
+                os.path.join(args.root, args.dest))
+
+        write_db(args.root, db)
+    else:
+        fail('no such file: ' + args.src)
+
+def add(args):
+    db = read_db(args.root)
+    if args.file in db:
+        fail(args.file + ' is already in the database; try edit instead')
+    else:
+        db[args.file] = args.tags
+        write_db(args.root, db)
+
+def tags(args):
+    db = read_db(args.root)
+    if args.file:
+        if args.file in db:
+            for tag in db[args.file]: print(tag)
+        else:
+            fail('no such file: ' + args.file)
+    else:
+        for tag in set(itertools.chain.from_iterable(db.values())): print(tag)
+
+def edit(args):
+    db = read_db(args.root)
+    if args.file in db:
+        tags = db[args.file]
+        for change in args.changes:
+            tag = change[1:]
+            if change[0] == '+':
+                if tag in tags:
+                    fail(args.file + ' already has tag ' + tag)
+                else:
+                    tags.append(tag)
+            elif change[0] == '-':
+                if tag in tags:
+                    tags.remove(tag)
+                else:
+                    fail(args.file + ' does not have tag ' + tag)
+            else:
+                fail('invalid change: ' + change)
+
+        write_db(args.root, db)
+    else:
+        fail('no such file: ' + args.file)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--root', nargs=1,
+            default=os.path.expanduser('~/.xxx/'), help='the porn root')
+    subparsers = parser.add_subparsers()
+
+    parser_search = subparsers.add_parser('search',
+            help='search by tags')
+    parser_search.add_argument('terms', nargs=argparse.REMAINDER,
+            help='the search terms')
+    parser_search.set_defaults(func=search)
+
+    parser_rename = subparsers.add_parser('rename',
+            help='rename individual files')
+    parser_rename.add_argument('src', help='the original name')
+    parser_rename.add_argument('dest', help='the new name')
+    parser_rename.set_defaults(func=rename)
+
+    parser_import = subparsers.add_parser('import',
+            help='add new files to the database')
+    parser_import.add_argument('file', help='the file to import')
+    parser_import.add_argument('tags', nargs='*',
+            help='the tags to assign the file')
+    parser_import.set_defaults(func=add)
+
+    parser_tags = subparsers.add_parser('tags', help='list tags')
+    parser_tags.add_argument('file', nargs='?',
+            help='the file to get tags from (list all tags if omitted)')
+    parser_tags.set_defaults(func=tags)
+
+    parser_edit = subparsers.add_parser('edit', help='edit the tags of a file')
+    parser_edit.add_argument('file', help='the file to edit')
+    parser_edit.add_argument('changes', nargs=argparse.REMAINDER,
+            help='the changes to make')
+    parser_edit.set_defaults(func=edit)
+
+    args = parser.parse_args()
+    try:
+        args.func(args)
+    except AttributeError:
+        parser.print_help()
+        exit(1)
+
+if __name__ == '__main__':
+    main()
