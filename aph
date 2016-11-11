@@ -3,6 +3,8 @@ import os, sys
 import json
 import argparse
 import itertools
+import functools
+import subprocess
 
 DB_FILE = '.assoc.json'
 
@@ -60,20 +62,17 @@ def write_db(where, what):
     with open(os.path.join(where, DB_FILE), 'w') as f:
         json.dump(what, f)
 
+def tag_filter(tag, fn, tags):
+    if tag[0] == '-':
+        return not tag[1:] in tags
+    else:
+        return tag in tags
+
 def search(args):
-    goods = []
-    bads = []
-    for arg in args.terms:
-        if arg[0] == '-':
-            bads.append(arg[1:])
-        else:
-            goods.append(arg)
-
+    preds = [functools.partial(tag_filter, term) for term in args.terms]
     for fn, tags in read_db(args.root).items():
-        good = all(tag in tags for tag in goods)
-        bad = any(tag in tags for tag in bads)
-
-        if good and not bad: print(fn)
+        if all(pred(fn, tags) for pred in preds):
+            print(fn)
 
 def rename(args):
     db = read_db(args.root)
@@ -105,28 +104,58 @@ def tags(args):
     else:
         for tag in set(itertools.chain.from_iterable(db.values())): print(tag)
 
+def edit_entry(fn, tags, changes):
+    for change in changes:
+        tag = change[1:]
+        if change[0] == '+':
+            if not tag in tags:
+                tags.append(tag)
+        elif change[0] == '-':
+            if tag in tags:
+                tags.remove(tag)
+            else:
+                fail(fn + ' does not have tag ' + tag)
+        else:
+            fail('invalid change: ' + change)
+
+def try_edit_entry(db, fn, changes):
+    if fn in db:
+        edit_entry(fn, db[fn], changes)
+    else:
+        fail('no such file: ' + fn)
+
 def edit(args):
     db = read_db(args.root)
-    if args.file in db:
-        tags = db[args.file]
-        for change in args.changes:
-            tag = change[1:]
-            if change[0] == '+':
-                if tag in tags:
-                    fail(args.file + ' already has tag ' + tag)
-                else:
-                    tags.append(tag)
-            elif change[0] == '-':
-                if tag in tags:
-                    tags.remove(tag)
-                else:
-                    fail(args.file + ' does not have tag ' + tag)
-            else:
-                fail('invalid change: ' + change)
-
-        write_db(args.root, db)
+    if args.file == '-':
+        for fn in sys.stdin.read().splitlines():
+            try_edit_entry(db, fn, args.changes)
     else:
-        fail('no such file: ' + args.file)
+        try_edit_entry(db, args.file, args.changes)
+
+    write_db(args.root, db)
+
+def ls(args):
+    files = os.listdir(args.root)
+
+    for bad in [DB_FILE, '.stfolder']:
+        if bad in files: files.remove(bad)
+
+    if args.type == 'notags':
+        db = read_db(args.root)
+        files = set(files) - set(db.keys())
+    elif args.type == 'dead':
+        db = read_db(args.root)
+        files = [fn for fn in db.keys() if not fn in files]
+
+    for f in files: print(f)
+
+def view(args):
+    fn = args.file and args.file or sys.stdin.readline().strip()
+    filepath = os.path.join(args.root, fn)
+    if os.path.isfile(filepath):
+        subprocess.run([args.program, filepath])
+    else:
+        fail('no such file: ' + fn)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -159,10 +188,27 @@ def main():
     parser_tags.set_defaults(func=tags)
 
     parser_edit = subparsers.add_parser('edit', help='edit the tags of a file')
-    parser_edit.add_argument('file', help='the file to edit')
+    parser_edit.add_argument('file',
+            help='the file to edit (or - to read from stdin)')
     parser_edit.add_argument('changes', nargs=argparse.REMAINDER,
             help='the changes to make')
     parser_edit.set_defaults(func=edit)
+
+    parser_list = subparsers.add_parser('list', help='list files')
+    parser_list.add_argument('type', nargs='?',
+            help="""
+            the type of files to list; available tags include notags to list
+            files that don't have any tags and dead to list entries in the
+            database that don't actually exist
+            """)
+    parser_list.set_defaults(func=ls)
+
+    parser_view = subparsers.add_parser('view', help='open a file for viewing')
+    parser_view.add_argument('-p', '--program', nargs='?', default='mpv',
+            help='the program to use for viewing')
+    parser_view.add_argument('file', nargs='?',
+            help='the file to open, or nothing to read from stdin')
+    parser_view.set_defaults(func=view)
 
     args = parser.parse_args()
     try:
