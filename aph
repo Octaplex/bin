@@ -160,7 +160,7 @@ def view(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--root', nargs=1,
-            default=os.path.expanduser('~/.xxx/'), help='the porn root')
+            default=os.path.expanduser('~/vid/.xxx/'), help='the root')
     subparsers = parser.add_subparsers()
 
     parser_search = subparsers.add_parser('search',
