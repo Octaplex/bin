@@ -1,2 +1,2 @@
 #!/bin/bash
-${XDG_CONFIG_HOME:-$HOME/.config}/panel/panel.sh
+${XDG_CONFIG_HOME:-$HOME/.config}/panel/panel
