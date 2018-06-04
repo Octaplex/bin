@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+DIRS=$(pwd | sed 's/^[^0-9]*//g')
+echo "${DIRS//\//.}"

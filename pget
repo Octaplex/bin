@@ -1,0 +1,55 @@
+#!/usr/bin/python3
+
+"""
+pget : get files with a pattern
+
+Given an input pattern and a generator, generate successive calls to `wget`
+with the given pattern supplied with input from the generator.
+
+Multiple patterns can be used that take the same input, and patterns can take
+multiple inputs, in which case multiple generators must be supplied. The inputs
+are provided in the order that generators are supplied on the command line.
+
+:author Daman Morris
+"""
+
+from subprocess import call
+from argparse import ArgumentParser, ArgumentTypeError
+
+wget = ['wget', '-q', '--show-progress']
+
+def slice_arg(s):
+    """
+    Convert a string of the form [start:]stop[:step] to the equivalent range
+    object. Unlike normal range syntax, the stop is inclusive.
+    """
+    parts = s.split(':')
+    if any(not part.isdigit() for part in parts):
+        raise ArgumentTypeError("bad range: {}".format(s))
+
+    parts = [int(part) for part in parts]
+    if len(parts) == 1:
+        parts = [0] + parts + [1]
+    elif len(parts) == 2:
+        parts += [1]
+
+    start, stop, step = parts
+    return range(start, stop + 1, step)
+
+
+parser = ArgumentParser(description='Get files with a pattern.')
+parser.add_argument('pattern', nargs='+', help='The pattern to use')
+parser.add_argument('--seq', '-s', metavar='sequence', type=slice_arg,
+        action='append', help='Supply a sequence')
+
+args = parser.parse_args()
+gens = args.seq
+
+if gens == None:
+    print('error: no sequence specified')
+    exit(1)
+
+for params in zip(*gens):
+    targets = (pattern.format(*params) for pattern in args.pattern)
+    for target in targets:
+        call(wget + [target])

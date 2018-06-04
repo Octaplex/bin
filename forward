@@ -1,0 +1,56 @@
+#!/bin/bash
+# forward: watch a directory for new files and send them to a remote server
+#
+# Usage: forward [-r] LOCAL_DIR ADDRESS [REMOTE_DIR]
+# Arguments:
+#   LOCAL_DIR       the local directory to watch
+#   ADDRESS         the address of a server to forward to
+#   REMOTE_DIR      the remote directory to forward to (same as LOCAL_DIR if
+#                   not given)
+#
+# Options:
+#   -r              watch directories recursively
+
+if [ "$1" = "-r" ]; then
+    recurse="-r"
+    shift
+fi
+
+die() {
+    echo "$1" >&2
+    exit 1
+}
+
+case "$#" in
+    2)
+        remotedir="$1"
+        ;;
+    3)
+        remotedir="$3"
+        ;;
+    ?)
+        die "usage: forward [-r] LOCAL_DIR ADDRESS [REMOTE_DIR]"
+        ;;
+esac
+
+localdir="$1"
+address="$2"
+
+ssh -q "$address" exit
+if [ $? -ne 0 ]; then
+    die "error: couldn't connect to host '$address'"
+fi
+
+if [ ! -d "$localdir" ]; then
+    die "error: no such local directory: $localdir"
+fi
+
+ssh "$address" test -d "$remotedir"
+if [ $? -ne 0 ]; then
+    die "error: no such remote directory: $remotedir"
+fi
+
+inotifywait $recurse -m -e moved_to -e close_write "$localdir" --format "%w%f" 2>/dev/null | while read line; do
+    fn="${line##$localdir/}"
+    scp "'$(printf "%q" "$localdir/$fn")'" "$address:'$remotedir/'"
+done

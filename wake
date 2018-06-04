@@ -1,0 +1,5 @@
+#!/bin/sh
+while true; do
+    make $@
+    inotifywait -qre close_write .
+done

@@ -1,0 +1,35 @@
+#!/usr/bin/bash
+#
+# Copy template files into the current directory.
+#
+# Usage: take STUB [TARGET]
+# Parameters:
+#   STUB    the name of a stub file to copy
+#   TARGET  the desired name of the copied file (default: STUB)
+#
+# Searches upwards until a file with the name STUB.stub is found, which is
+# copied into the current directory with the name TARGET. If a file STUB.after
+# exists in the same directory as STUB.stub, and is executable, it is executed
+# in the current directory with TARGET passed in as an argument (this can be
+# used for post-processing).
+
+STUB_NAME="$1.stub"
+AFTER_NAME="$1.after"
+case "$#" in
+    1)
+        TARGET="$1"
+        ;;
+    2)
+        TARGET="$2"
+        ;;
+    *)
+        echo "usage: take STUB [TARGET]"
+        exit 1
+        ;;
+esac
+
+STUB="$(upfind -name $STUB_NAME | head -n1)"
+cp "$STUB" "$TARGET"
+
+AFTER="$(dirname $STUB)/$AFTER_NAME"
+[ -e "$AFTER" ] && "$AFTER" "$TARGET"

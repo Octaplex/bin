@@ -7,6 +7,6 @@ pidfile="/tmp/pop-pid"
 test -e "$pidfile" && pkill -P $(cat "$pidfile")
 echo $$ >"$pidfile"
 
-(echo " $@"; sleep 2) | lemonbar -B "#$black00" -bdg 480x28+220+8 \
+(echo " $@"; sleep 2) | lemonbar -B "#$black00" -dg 480x28+220+6 \
     -f 'Source Code Pro:size=8:style=Medium,Regular' -f 'Material Icons:size=11' \
     -n 'popup'

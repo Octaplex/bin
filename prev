@@ -1,0 +1,3 @@
+#!/usr/bin/sh
+$PDF_VIEWER $1.pdf &
+latexmk -pvc -pdf $*

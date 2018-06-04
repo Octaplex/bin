@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+OG_PWD="$PWD"
+
+while [[ "$PWD" != "$HOME" ]]; do
+    find "$PWD/" -maxdepth 1 "$@"
+    cd ..
+done
+
+cd "$OG_PWD"

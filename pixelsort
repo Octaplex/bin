@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+python "$HOME/.local/lib/pixelsort/pixelsort.py" "$@"

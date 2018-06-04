@@ -5,8 +5,15 @@ source ~/.config/colors/colors.sh
 
 ln -sf "$1" "$HOME/img/desktop"
 hsetroot -fill "$HOME/img/desktop" -write "$HOME/img/lock.png"
+
+convert "$HOME/img/lock.png" -blur 0x10 \
+	-background none "$HOME/img/lock_icon.svg" -gravity center -geometry +0-49 \
+	-composite "$HOME/img/lock.png"
+
 #convert "$HOME/img/lock.png" -blur 0x14 "$HOME/img/lock.png"
-convert "$HOME/img/lock.png" -blur 0x14 \
-    -fill '#00000000' -fill "#${white}99" -font Merkur \
-    -pointsize 80 -gravity Center -annotate +0-288 'ENTER PASSWORD TO UNLOCK' \
-    "$HOME/img/lock.png"
+#width=$(identify -format '%[fx:w]' "$HOME/img/lock.png")
+#convert "$HOME/img/lock.png" -blur 0x14 \
+#    -fill '#00000044' -draw "rectangle 0,180,$width,320" \
+#    -fill "#${white}ff" -font Iosevka \
+#    -pointsize 80 -gravity Center -annotate +0-288 '<<< LOCKED >>>' \
+#    "$HOME/img/lock.png"

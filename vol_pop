@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-source ~/.config/colors/colors.sh
+#source ~/.config/colors/colors.sh
 
 vol=$(amixer -D pulse get Master | tail -1 | cut -d ' ' -f 7 | tr -d '[%]')
 width=40
@@ -7,7 +7,7 @@ width=40
 hiw=$(($width*$vol/100))
 unw=$(($width-$hiw))
 
-hi="%{F#$white}$(yes '─' | head -n $hiw | tr -d '\n')"
-un="%{F#$gray}$(yes '─' | head -n $unw | tr -d '\n')"
+hi="$(yes '─' | head -n $hiw | tr -d '\n')"
+un="$(yes '─' | head -n $unw | tr -d '\n')"
 
-pop "   $hi$un  "
+~/.local/bin/pop " %{F#002b36}  $hi%{F#839496}$un  "

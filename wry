@@ -1,0 +1,28 @@
+#!/usr/bin/bash
+
+#
+# A simple script to remotely submit to try.
+#
+# Usage: wry CLASS SUBMISSION FILES...
+# Arguments are the same as for try itself.
+#
+
+# configuration
+HOST="rit"
+ROOT="wry"
+TRY="/usr/local/dcs/bin/try"
+
+# arguments
+CLASS="$1"
+shift
+SUBMISSION="$1"
+shift
+FILES="$@"
+
+LOCATION="$ROOT/$CLASS/$SUBMISSION"
+
+ssh $HOST "mkdir -p $LOCATION"
+echo "Uploading files..."
+scp $FILES "$HOST:$LOCATION"
+echo "Trying submission $SUBMISSION to $CLASS"
+ssh $HOST "cd $LOCATION; $TRY $CLASS $SUBMISSION $FILES < /dev/null"

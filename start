@@ -1,0 +1,5 @@
+#!/usr/bin/bash
+HOURS_DIR="${HOURS_DIR:-$HOME/doc}"
+
+fn="$HOURS_DIR/$1_hours.csv"
+echo "$(date '+%Y-%m-%d'),$(date '+%H:%M')" >> $fn

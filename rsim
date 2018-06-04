@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# wrapper
+#
+# figures out which version to run
+#
+
+#
+# make sure we know what kind of system we're on
+#
+eval `/home/fac/wrc/scripts/stype sh`
+
+# 'echo debugging $0 $* > /dev/tty'
+
+#
+# figure out the binary name
+#
+name="`basename $0`"
+
+#
+# exec the correct version, or complain
+#
+
+if [ -x /home/fac/wrc/bin.${SYS_TYPE}/$name ]
+then
+	exec /home/fac/wrc/bin.${SYS_TYPE}/$name $*
+fi
+
+printf "%s: can't find %s binary for %s\n" $0 $SYS_TYPE $name > /dev/tty

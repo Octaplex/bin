@@ -1,0 +1,26 @@
+#!/usr/bin/python
+
+"""
+Read in a dictionary and output how many entries it has.
+"""
+
+import sys
+import panflute as pf
+
+def count(doc):
+    if len(doc.content) == 1 and isinstance(doc.content[0], pf.DefinitionList):
+        print(str(len(doc.content[0].content)) + ' entries')
+    else:
+        print('file is not a dictionary!')
+
+if __name__ == '__main__':
+    if len(sys.argv) == 2:
+        try:
+            with open(sys.argv[1], 'r') as f:
+                count(pf.convert_text(f.read(), standalone = True))
+        except FileNotFoundError:
+            print('no such file: ' + sys.argv[1], file = sys.stderr)
+            exit(1)
+    else:
+        print('usage: dwc FILE', file = sys.stderr)
+        exit(1)

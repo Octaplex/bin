@@ -1,0 +1,37 @@
+#!/usr/bin/bash
+# Usage: sup [ID] WHERE
+
+die() {
+    echo "$1" >&2
+    exit 1
+}
+
+case $# in
+    1)
+        id=default
+        where="$1"
+        ;;
+    2)
+        id="$1"
+        where="$2"
+        ;;
+    ?)
+        die "usage: sup [ID] WHERE"
+        ;;
+esac
+
+if [ ! -d ".$id.sup" ]; then
+    die "error: no such template: $id"
+fi
+
+if [ -d "$where" ]; then
+    die "error: target directory already exists"
+fi
+
+cp -R --preserve=all ".$id.sup" "$where"
+cd "$where"
+
+if [ -x init ]; then
+    ./init
+    rm init
+fi
