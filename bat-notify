@@ -1,0 +1,36 @@
+#!/bin/bash
+
+width=30
+thresh=30
+
+info="$(acpi -b)"
+
+field() {
+    echo "$info" | awk "FNR==$1 { print \$$2 }"
+}
+
+#bat1status="$(field 1 3 | tr -d ',')"
+#bat1level="$(field 1 4 | tr -d '%,')"
+#bat2status="$(field 2 3 | tr -d ',')"
+#bat2level="$(field 2 4 | tr -d '%,')"
+
+status="$(echo "$info" | awk "FNR==2 { print \$3 }" | tr -d ',')"
+level="$(echo "$info" | awk "FNR==2 { print \$4 }" | tr -d '%,')"
+
+hiw=$(($width*$level/100))
+unw=$(($width-$hiw))
+
+hi="$(yes '—' | head -n $hiw | tr -d '\n')"
+un="$(yes '—' | head -n $unw | tr -d '\n')"
+
+if [ $status = "Unknown" -o $status = "Charging" ]; then
+    color="#e4b51c"
+else
+    if [ $level -lt $thresh ]; then
+        color="#ef5253"
+    else
+        color="#7cc844"
+    fi
+fi
+
+$HOME/.local/bin/pop "%{F$color}$hi%{F#667581}$un"

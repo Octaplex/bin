@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+
+tags() {
+    timew tags | cut -d' ' -f1 | tail -n +4 | head -n -1
+}
+
+timew stop
+tag="$(tags | ~/.local/bin/menu)"
+if [ -n "$tag" ]; then
+    timew start "$tag"
+fi

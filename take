@@ -32,4 +32,6 @@ STUB="$(upfind -name $STUB_NAME | head -n1)"
 cp "$STUB" "$TARGET"
 
 AFTER="$(dirname $STUB)/$AFTER_NAME"
-[ -e "$AFTER" ] && "$AFTER" "$TARGET"
+if [ -e "$AFTER" ]; then
+    "$AFTER" "$TARGET"
+fi

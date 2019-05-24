@@ -1,0 +1,43 @@
+#!/usr/bin/python3
+import re
+from subprocess import run, check_output
+from os import environ
+
+width = 30
+thresh = 30
+
+def parse_line(s):
+    """
+    Parse an ACPI battery info line and return a tuple of (status, level).
+    """
+    s = re.sub('[:,%]', '', s)
+    words = s.split(' ')
+    return (words[2], int(words[3]))
+
+acpi = check_output(['acpi', '-b']).decode('utf-8').split('\n')
+bats = [parse_line(line) for line in acpi if line != '']
+
+# Calculate percentage
+levels = [level for _, level in bats]
+level = sum(levels)
+max_level = 100*len(levels)
+percentage = level/max_level
+
+# Get status
+status = [status for status, _ in bats if status != 'Unknown'][-1]
+
+# Display
+if status == 'Charging':
+    color = '#e4b51c'
+elif level < thresh:
+    color = '#ef5253'
+else:
+    color = '#7cc844'
+
+hi_width = int(width * percentage)
+hi = '—' * hi_width
+un = '—' * (width - hi_width)
+
+pop = environ['HOME'] + '/.local/bin/pop'
+disp = '%%{F%s}%s%%{F#667581}%s' % (color, hi, un)
+run([pop, disp])

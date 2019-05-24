@@ -1,0 +1,43 @@
+#!/bin/bash
+# Control the LUMinance of your screen
+
+# Backlight location
+BACKLIGHT=${BACKLIGHT:-/sys/class/backlight/intel_backlight}
+
+brightness=`cat $BACKLIGHT/brightness`
+max_brightness=`cat $BACKLIGHT/max_brightness`
+action=$1
+shift
+
+set() {
+    brightness=$1
+
+    # Correct for invalid numbers (from inc/dec)
+    if [ $brightness -gt $max_brightness ]; then
+        brightness=$max_brightness
+    fi
+    if [ $brightness -lt 0 ]; then
+        brightness=0
+    fi
+
+    tee $BACKLIGHT/brightness <<< $brightness >/dev/null
+}
+
+case $action in
+    get)
+        if [ "$1" = "-p" ]; then
+            echo $((100*$brightness/$max_brightness))
+        else
+            echo $brightness
+        fi
+        ;;
+    set)
+        set $1
+        ;;
+    inc)
+        set $(($brightness+$1))
+        ;;
+    dec)
+        set $(($brightness-$1))
+        ;;
+esac

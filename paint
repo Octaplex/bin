@@ -1,0 +1,8 @@
+#!/bin/bash
+COLORS_DIR="$HOME/.config/colors"
+
+scheme="$1"
+$COLORS_DIR/select.sh "$scheme"
+
+$COLORS_DIR/colors.sh
+xrdb -merge $HOME/.Xresources

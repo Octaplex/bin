@@ -1,0 +1,5 @@
+#!/bin/bash
+pkill mopidy
+killall mopidy
+systemctl --user kill mopidy
+systemctl --user restart mopidy

@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+brightness=`$HOME/.local/bin/lum get -p`
+width=30
+
+hiw=$(($width*$brightness/100))
+unw=$(($width-$hiw))
+
+hi="$(yes '—' | head -n $hiw | tr -d '\n')"
+un="$(yes '—' | head -n $unw | tr -d '\n')"
+
+$HOME/.local/bin/pop "%{F#e4b51c}$hi%{F#667581}$un"

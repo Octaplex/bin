@@ -1,0 +1,12 @@
+#!/bin/bash
+# truncate a string to a certain length (default: 80 characters)
+
+length="$(echo -n $1 | wc -c)"
+max=${2:-80}
+
+if [ $length -gt $max ]; then
+    echo -n $1 | cut -z -c "1-$max"
+    echo -n "..."
+else
+    echo -n $1
+fi

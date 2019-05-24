@@ -1,13 +1,14 @@
 #!/usr/bin/bash
-#source ~/.config/colors/colors.sh
 
-vol=$(amixer -D pulse get Master | tail -1 | cut -d ' ' -f 7 | tr -d '[%]')
-width=40
+vol=$(amixer sget Master | tail -1 | cut -d ' ' -f 6 | tr -d '[%]')
+width=30
 
 hiw=$(($width*$vol/100))
 unw=$(($width-$hiw))
 
-hi="$(yes '─' | head -n $hiw | tr -d '\n')"
-un="$(yes '─' | head -n $unw | tr -d '\n')"
+hi="$(yes '—' | head -n $hiw | tr -d '\n')"
+un="$(yes '—' | head -n $unw | tr -d '\n')"
 
-~/.local/bin/pop " %{F#002b36}  $hi%{F#839496}$un  "
+#$HOME/.local/bin/pop " $vol%"
+#$HOME/.local/bin/pop "  $hi%{F#667581}$un"
+$HOME/.local/bin/pop "%{F#33b5e1}$hi%{F#667581}$un"

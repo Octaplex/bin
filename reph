@@ -1,0 +1,64 @@
+#!/bin/env python3
+# reph - report hours
+from subprocess import Popen, PIPE, run
+from dateutil.parser import parse as parse_dt
+from dateutil.tz import tzlocal
+from argparse import ArgumentParser
+import json
+
+def process(interval):
+    """
+    Process an interval, which is a JSON dict containing the keys 'start' and
+    'end' defining the interval.
+    """
+
+    try:
+        start = parse_dt(interval["start"]).astimezone(tzlocal())
+        end = parse_dt(interval["end"]).astimezone(tzlocal())
+
+        return "{} to {}".format(start.strftime("%Y/%m/%d - %I:%M %p"),
+                end.strftime("%I:%M %p"))
+    except KeyError:
+        return None
+
+def send(lines, who, to, subject):
+    """
+    Send an email to the specified address.
+    """
+
+    body = "From: {}\nSubject: {}\n{}".format(who, subject, "\n".join(lines))
+
+    if to == ".":
+        print(body)
+    else:
+        p = Popen(['sendmail', to], stdin=PIPE)
+        p.communicate(input=body.encode('utf-8'))
+
+def main():
+    parser = ArgumentParser(description='Print out a summary of work.')
+    parser.add_argument('tag', type=str, help='the TimeWarrior tag to extract')
+    parser.add_argument('--duration', '-d',
+            help='the duration to look for work', default='1wk')
+    parser.add_argument('--mail-to', '-m',
+            help='an address to send a report email to')
+    parser.add_argument('--subject', '-s', help='the subject for an email')
+    parser.add_argument('--mail-from', '-f',
+            help='the email address to send from',
+            default='damanm72@gmail.com')
+
+    args = parser.parse_args()
+
+    raw = run("timew export {} ago {}".format(args.duration, args.tag),
+            shell=True, capture_output=True)
+
+    lines = [process(data) for data in json.loads(raw.stdout)]
+    lines = [l for l in lines if l is not None]
+
+    if args.mail_to:
+        if args.subject is None: args.subject = args.tag + " Hours"
+        send(lines, args.mail_from, args.mail_to, args.subject)
+    else:
+        print("\n".join(lines))
+
+if __name__ == '__main__':
+    main()

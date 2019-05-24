@@ -1,12 +1,21 @@
 #!/usr/bin/bash
-source ~/.config/colors/colors.sh
+# pop - send a popup message to a running panel
 
-pidfile="/tmp/pop-pid"
+source $HOME/.local/panel/config
 
-# kill any existing popups
-test -e "$pidfile" && pkill -P $(cat "$pidfile")
-echo $$ >"$pidfile"
+# Kill old instances (to prevent them from sending the empty message
+# prematurely)
+for pid in $(pidof -x pop); do
+    if [ $pid != $$ ]; then
+        kill -9 $pid
+    fi
+done
 
-(echo " $@"; sleep 2) | lemonbar -B "#$black00" -dg 480x28+220+6 \
-    -f 'Source Code Pro:size=8:style=Medium,Regular' -f 'Material Icons:size=11' \
-    -n 'popup'
+send() {
+    # Send a message to the panel
+    echo "msg$cmd_ifs$1" >> $fifo
+}
+
+send "$@"
+sleep 2
+send

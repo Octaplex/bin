@@ -1,18 +1,9 @@
 #!/bin/bash
 #source ~/.config/colors/colors.sh
 
-#image=/tmp/screen_lock.png
-#resolution=$(xdpyinfo | grep dimensions | awk '{print $2}')
-#ffmpeg -y -loglevel 0 -s "$resolution" -f x11grab -i $DISPLAY -vframes 1 \
-#    -vf "noise=alls=10,scale=iw*.05:-1,scale=iw*20:-1:flags=neighbor" \
-#    "$image"
-
-#ffmpeg -y -loglevel 0 -i "$image" -i "$HOME/img/lock_icon.png" \
-#    -filter_complex "overlay=(W-w)/2+2:(H-h)/2-48" \
-#    "$image"
-
 i3lock -e -i "$HOME/img/lock.png" --ringcolor="00000000" --insidecolor="00000000" \
-    --linecolor="00000000" --keyhlcolor="2aa198ff" --bshlcolor="dc322fff" \
+    --linecolor="00000000" --keyhlcolor="c85e7cff" --bshlcolor="fdcc59ff" \
     --ringwrongcolor="00000000" --insidewrongcolor="00000000" \
     --ringvercolor="00000000" --insidevercolor="00000000" \
-    --wrongcolor="dc322fff" --separatorcolor="00000000"
+    --wrongcolor="dd464cff" --separatorcolor="00000000" --verifcolor="b9b5b8ff" \
+    --veriftext="Checking..." --wrongtext="WRONG" --locktext="Locking..."

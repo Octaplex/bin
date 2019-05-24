@@ -1,0 +1,15 @@
+#!/usr/bin/bash
+
+w=500
+h=28
+lines=7
+
+dim=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
+swidth=$(echo "$dim" | cut -dx -f1)
+sheight=$(echo "$dim" | cut -dx -f2)
+
+x=$((($swidth-$w)/2))
+y=$((($sheight-$h*$lines)/2))
+
+dmenu -dim 0.4 -i -h $h -w $w -x $x -l 7 -y $y -fn 'Source Code Pro:size=8' \
+    -nb '#ffffff' -nf '#4d4d4c' -sb '#a3685a' -sf '#ffffff' -o 0 $@
